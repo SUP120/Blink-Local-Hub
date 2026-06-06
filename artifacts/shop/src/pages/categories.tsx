@@ -20,6 +20,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   stationery: "from-yellow-400/20 to-yellow-50 border-yellow-200 text-yellow-900",
 };
 
+/* Real PNG icons for 6 categories */
+const CATEGORY_IMAGES: Record<string, string> = {
+  "baby-care": "/baby.png",
+  "cold-drinks": "/cold-drinks.png",
+  "dairy-eggs": "/dairy-products.png",
+  electronics: "/electronic-devices.png",
+  "frozen-food": "/frozenfood.png",
+  "fruits-vegetables": "/vegetable.png",
+};
+
 export default function Categories() {
   const { data: categories, isLoading } = useListCategories();
 
@@ -40,6 +50,7 @@ export default function Categories() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {categories?.map((cat) => {
             const colors = CATEGORY_COLORS[cat.slug] ?? "from-gray-400/20 to-gray-50 border-gray-200 text-gray-900";
+            const imgSrc = CATEGORY_IMAGES[cat.slug];
             return (
               <Link
                 key={cat.id}
@@ -47,7 +58,15 @@ export default function Categories() {
                 className={`relative bg-gradient-to-br ${colors} border rounded-2xl p-5 flex flex-col gap-3 group hover:-translate-y-1 active:translate-y-0 transition-all duration-200 card-shadow hover:card-shadow-hover`}
                 data-testid={`card-category-${cat.slug}`}
               >
-                <div className="text-4xl">{cat.icon}</div>
+                {imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={cat.name}
+                    className="w-12 h-12 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-200"
+                  />
+                ) : (
+                  <div className="text-4xl">{cat.icon}</div>
+                )}
                 <div>
                   <h3 className="font-bold text-base leading-tight">{cat.name}</h3>
                   <p className="text-sm opacity-60 font-medium mt-0.5">{cat.productCount} items</p>

@@ -21,6 +21,26 @@ const CATEGORY_COLORS: Record<string, string> = {
   stationery: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
 };
 
+/* Slug → custom PNG icon path (lives in /public/) */
+const CATEGORY_IMAGES: Record<string, string> = {
+  "baby-care": "/baby.png",
+  "cold-drinks": "/cold-drinks.png",
+  "dairy-eggs": "/dairy-products.png",
+  electronics: "/electronic-devices.png",
+  "frozen-food": "/frozenfood.png",
+  "fruits-vegetables": "/vegetable.png",
+};
+
+/* Card accent colours for the icon-grid */
+const ICON_GRID_COLORS: Record<string, { bg: string; badge: string; text: string }> = {
+  "baby-care":        { bg: "from-purple-50 to-pink-50   border-purple-200", badge: "bg-purple-100 text-purple-700", text: "text-purple-900" },
+  "cold-drinks":      { bg: "from-cyan-50   to-blue-50   border-cyan-200",   badge: "bg-cyan-100   text-cyan-700",   text: "text-cyan-900"   },
+  "dairy-eggs":       { bg: "from-blue-50   to-sky-50    border-blue-200",   badge: "bg-blue-100   text-blue-700",   text: "text-blue-900"   },
+  electronics:        { bg: "from-slate-50  to-indigo-50 border-slate-200",  badge: "bg-slate-100  text-slate-700",  text: "text-slate-900"  },
+  "frozen-food":      { bg: "from-indigo-50 to-violet-50 border-indigo-200", badge: "bg-indigo-100 text-indigo-700", text: "text-indigo-900" },
+  "fruits-vegetables":{ bg: "from-emerald-50 to-lime-50  border-emerald-200",badge: "bg-emerald-100 text-emerald-700",text:"text-emerald-900"},
+};
+
 export default function Home() {
   const { data: categories, isLoading: isCategoriesLoading } = useListCategories();
   const { data: featuredProducts, isLoading: isProductsLoading } = useListFeaturedProducts();
@@ -153,6 +173,65 @@ export default function Home() {
                 </Link>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* ── FEATURED CATEGORY ICON GRID ── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight">Popular Categories</h2>
+            <p className="text-sm text-muted-foreground">Tap to browse top picks</p>
+          </div>
+          <Link
+            href="/categories"
+            className="text-sm font-bold text-primary hover:underline flex items-center gap-1"
+          >
+            All <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {isCategoriesLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {categories
+              ?.filter((cat) => CATEGORY_IMAGES[cat.slug])
+              .map((cat) => {
+                const imgSrc = CATEGORY_IMAGES[cat.slug];
+                const color = ICON_GRID_COLORS[cat.slug] ?? {
+                  bg: "from-gray-50 to-white border-gray-200",
+                  badge: "bg-gray-100 text-gray-700",
+                  text: "text-gray-900",
+                };
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    className={`bg-gradient-to-br ${color.bg} border rounded-2xl p-4 flex flex-col items-center gap-2 group hover:-translate-y-1 active:translate-y-0 transition-all duration-200 shadow-sm hover:shadow-md`}
+                    data-testid={`icon-card-${cat.slug}`}
+                  >
+                    <div className="w-16 h-16 flex items-center justify-center">
+                      <img
+                        src={imgSrc}
+                        alt={cat.name}
+                        className="w-14 h-14 object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-200"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <p className={`text-xs font-bold leading-tight ${color.text}`}>{cat.name}</p>
+                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${color.badge}`}>
+                        {cat.productCount} items
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
           </div>
         )}
       </section>
