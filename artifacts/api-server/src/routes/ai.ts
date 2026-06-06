@@ -5,21 +5,21 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
-const GROK_BASE = "https://api.x.ai/v1";
-const GROK_MODEL = "grok-3-mini";
+const GITHUB_AI_BASE = "https://models.inference.ai.azure.com";
+const GITHUB_AI_MODEL = "gpt-4o-mini";
 
 async function callGrok(systemPrompt: string, userMessage: string): Promise<string> {
-  const key = process.env.GROK_API_KEY;
-  if (!key) throw new Error("GROK_API_KEY not set");
+  const key = process.env.GITHUB_TOKEN;
+  if (!key) throw new Error("GITHUB_TOKEN not set");
 
-  const response = await fetch(`${GROK_BASE}/chat/completions`, {
+  const response = await fetch(`${GITHUB_AI_BASE}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: GROK_MODEL,
+      model: GITHUB_AI_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
@@ -31,7 +31,7 @@ async function callGrok(systemPrompt: string, userMessage: string): Promise<stri
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Grok API error: ${err}`);
+    throw new Error(`GitHub AI error: ${err}`);
   }
 
   const data = (await response.json()) as { choices: { message: { content: string } }[] };
