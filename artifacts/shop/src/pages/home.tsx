@@ -25,7 +25,7 @@ const ICON_GRID_COLORS: Record<string, { bg: string; ring: string; badge: string
 };
 
 /* Animated skeleton card for product loading */
-function ProductSkeleton({ delay = 0 }: { delay?: number }) {
+function ProductSkeleton({ delay = 0 }: { delay?: number; key?: React.Key }) {
   return (
     <div
       className="bg-white rounded-2xl overflow-hidden border border-border/60 card-shadow animate-fade-in-up"
