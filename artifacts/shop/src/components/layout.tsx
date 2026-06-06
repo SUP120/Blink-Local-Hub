@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetCart } from "@workspace/api-client-react";
-import { ShoppingCart, Search, Home, Grid3X3, PackageOpen, Zap } from "lucide-react";
+import { ShoppingCart, Search, Home, Grid3X3, PackageOpen, Zap, Sparkles, ShieldCheck } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -21,11 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 bg-white border-b border-border/60">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <Link
-            href="/"
-            className="flex items-center gap-2 shrink-0 group"
-            data-testid="link-logo"
-          >
+          <Link href="/" className="flex items-center gap-2 shrink-0 group" data-testid="link-logo">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
               <Zap className="w-4 h-4 text-white fill-white" />
             </div>
@@ -34,10 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <form
-            onSubmit={handleSearch}
-            className="flex-1 max-w-xl mx-auto hidden md:flex relative"
-          >
+          <form onSubmit={handleSearch} className="flex-1 max-w-xl mx-auto hidden md:flex relative">
             <div className="relative w-full group">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <input
@@ -51,8 +44,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </form>
 
           <div className="flex items-center gap-2 ml-auto shrink-0">
-            <Link href="/orders" className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-2" data-testid="link-orders">
+            <Link
+              href="/ai"
+              className={`hidden sm:flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded-full transition-all ${location === "/ai" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="link-ai"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              AI Shop
+            </Link>
+            <Link
+              href="/orders"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+              data-testid="link-orders"
+            >
               My Orders
+            </Link>
+            <Link
+              href="/admin/login"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-secondary"
+              data-testid="link-admin"
+              title="Admin Panel"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Admin
             </Link>
             <Link
               href="/cart"
@@ -61,17 +75,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <ShoppingCart className="h-4 w-4" />
               <span>
-                {itemCount > 0 ? (
-                  <>Cart · {itemCount}</>
-                ) : (
-                  "Cart"
-                )}
+                {itemCount > 0 ? <>Cart · {itemCount}</> : "Cart"}
               </span>
             </Link>
           </div>
         </div>
 
-        <div className="border-t border-border/40 bg-[hsl(142,72%,36%)/0.04] md:hidden">
+        <div className="border-t border-border/40 md:hidden">
           <form onSubmit={handleSearch} className="flex gap-2 px-4 py-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -107,8 +117,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex flex-wrap gap-6 text-sm font-medium text-muted-foreground">
               <Link href="/categories" className="hover:text-primary transition-colors">All Categories</Link>
+              <Link href="/ai" className="hover:text-primary transition-colors flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> AI Shop</Link>
               <Link href="/orders" className="hover:text-primary transition-colors">My Orders</Link>
               <Link href="/cart" className="hover:text-primary transition-colors">Cart</Link>
+              <Link href="/admin/login" className="hover:text-primary transition-colors flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> Admin</Link>
             </div>
           </div>
           <div className="border-t border-border/60 mt-8 pt-6 text-xs text-muted-foreground text-center">
@@ -118,10 +130,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </footer>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border/60 z-50 safe-area-pb">
-        <div className="grid grid-cols-4 h-14">
+        <div className="grid grid-cols-5 h-14">
           {[
             { href: "/", icon: Home, label: "Home" },
             { href: "/categories", icon: Grid3X3, label: "Categories" },
+            { href: "/ai", icon: Sparkles, label: "AI" },
             { href: "/orders", icon: PackageOpen, label: "Orders" },
             { href: "/cart", icon: ShoppingCart, label: "Cart" },
           ].map(({ href, icon: Icon, label }) => {
