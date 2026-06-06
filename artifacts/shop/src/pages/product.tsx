@@ -1,40 +1,66 @@
 import { useParams, Link } from "wouter";
-import { useGetProduct, useGetCart, useAddToCart, useUpdateCartItem, useRemoveFromCart, getGetCartQueryKey } from "@workspace/api-client-react";
+import {
+  useGetProduct,
+  useGetCart,
+  useAddToCart,
+  useUpdateCartItem,
+  useRemoveFromCart,
+  getGetCartQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Clock, Plus, Minus, ChevronLeft, Loader2, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Clock, Plus, Minus, ChevronLeft, Loader2, ShieldCheck, Zap, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
+const IMG_BG: Record<string, string> = {
+  groceries: "bg-amber-50",
+  "dairy-eggs": "bg-blue-50",
+  "fruits-vegetables": "bg-emerald-50",
+  snacks: "bg-orange-50",
+  "cold-drinks": "bg-cyan-50",
+  "frozen-food": "bg-indigo-50",
+  "instant-ready": "bg-red-50",
+  "personal-care": "bg-pink-50",
+  household: "bg-slate-50",
+  "baby-care": "bg-purple-50",
+  "pet-supplies": "bg-lime-50",
+  medicines: "bg-rose-50",
+  electronics: "bg-sky-50",
+  stationery: "bg-yellow-50",
+};
 
 export default function ProductDetail() {
   const params = useParams();
   const productId = Number(params.id);
-  
   const queryClient = useQueryClient();
+
   const { data: product, isLoading } = useGetProduct(productId, {
-    query: { enabled: !!productId }
+    query: { enabled: !!productId, queryKey: getGetCartQueryKey() as unknown as never },
   });
-  
   const { data: cart } = useGetCart();
-  
+
   const addToCart = useAddToCart();
   const updateCart = useUpdateCartItem();
   const removeCart = useRemoveFromCart();
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
+
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto pb-12 flex flex-col md:flex-row gap-8">
-        <Skeleton className="w-full md:w-1/2 aspect-square rounded-3xl" />
-        <div className="w-full md:w-1/2 space-y-4 pt-4">
-          <Skeleton className="h-10 w-3/4" />
-          <Skeleton className="h-6 w-1/4" />
-          <Skeleton className="h-8 w-1/3 mt-6" />
-          <Skeleton className="h-12 w-full mt-8 rounded-full" />
-          <div className="space-y-2 mt-8">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
+      <div className="max-w-4xl mx-auto pb-12">
+        <Skeleton className="h-5 w-32 mb-6" />
+        <div className="flex flex-col md:flex-row gap-10">
+          <Skeleton className="w-full md:w-1/2 aspect-square rounded-3xl" />
+          <div className="w-full md:w-1/2 space-y-4 pt-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-28 mt-4" />
+            <Skeleton className="h-14 w-full mt-6 rounded-full" />
+            <div className="space-y-2 mt-6">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-5/6" />
+              <Skeleton className="h-3.5 w-2/3" />
+            </div>
           </div>
         </div>
       </div>
@@ -43,165 +69,157 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="text-center py-20">
-        <h1 className="text-2xl font-bold mb-4">Product not found</h1>
-        <Link href="/" className="text-primary hover:underline">
-          Return to Home
-        </Link>
+      <div className="text-center py-24">
+        <h1 className="text-xl font-extrabold mb-4">Product not found</h1>
+        <Link href="/" className="text-primary font-semibold hover:underline">Home</Link>
       </div>
     );
   }
 
-  const cartItem = cart?.items.find((item) => item.productId === product.id);
-  const quantity = cartItem?.quantity || 0;
-
+  const cartItem = cart?.items.find((i) => i.productId === product.id);
+  const quantity = cartItem?.quantity ?? 0;
   const isPending = addToCart.isPending || updateCart.isPending || removeCart.isPending;
 
-  const handleAdd = () => {
-    addToCart.mutate(
-      { data: { productId: product.id, quantity: 1 } },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() }) }
-    );
-  };
+  const handleAdd = () =>
+    addToCart.mutate({ data: { productId: product.id, quantity: 1 } }, { onSuccess: invalidate });
 
-  const handleIncrement = () => {
-    updateCart.mutate(
-      { productId: product.id, data: { quantity: quantity + 1 } },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() }) }
-    );
-  };
+  const handleIncrement = () =>
+    updateCart.mutate({ productId: product.id, data: { quantity: quantity + 1 } }, { onSuccess: invalidate });
 
   const handleDecrement = () => {
     if (quantity <= 1) {
-      removeCart.mutate(
-        { productId: product.id },
-        { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() }) }
-      );
+      removeCart.mutate({ productId: product.id }, { onSuccess: invalidate });
     } else {
-      updateCart.mutate(
-        { productId: product.id, data: { quantity: quantity - 1 } },
-        { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() }) }
-      );
+      updateCart.mutate({ productId: product.id, data: { quantity: quantity - 1 } }, { onSuccess: invalidate });
     }
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
+  const discount = product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  const imgBg = IMG_BG[product.categorySlug] ?? "bg-gray-50";
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
-      <Link href={`/category/${product.categorySlug}`} className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition-colors">
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back to {product.categoryName}
+      <Link
+        href={`/category/${product.categorySlug}`}
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        data-testid="link-back"
+      >
+        <ChevronLeft className="w-4 h-4" /> {product.categoryName}
       </Link>
 
-      <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
-        {/* Product Image */}
+      <div className="flex flex-col md:flex-row gap-10">
+        {/* Image */}
         <div className="w-full md:w-1/2">
-          <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-sm p-8 flex items-center justify-center">
+          <div className={`relative aspect-square rounded-3xl overflow-hidden ${imgBg} flex items-center justify-center p-10`}>
             {discount > 0 && (
-              <Badge className="absolute top-4 left-4 z-10 bg-blue-600 hover:bg-blue-700 text-sm font-bold border-none shadow-sm px-3 py-1">
+              <div className="absolute top-4 left-4 bg-rose-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-sm z-10">
                 {discount}% OFF
-              </Badge>
+              </div>
             )}
-            <img 
+            <img
               src={product.imageUrl || `https://picsum.photos/seed/product-${product.id}/600/600`}
               alt={product.name}
-              className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain hover:scale-[1.04] transition-transform duration-500"
             />
-          </div>
-        </div>
-
-        {/* Product Details */}
-        <div className="w-full md:w-1/2 flex flex-col">
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Link href={`/category/${product.categorySlug}`} className="text-xs font-semibold uppercase tracking-wider text-primary hover:underline">
-                {product.categoryName}
-              </Link>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight mb-2">
-              {product.name}
-            </h1>
-            <p className="text-muted-foreground">{product.unit}</p>
-          </div>
-
-          <div className="flex items-center gap-3 mb-8">
-            <div className="bg-gray-100 text-gray-800 text-sm font-semibold px-3 py-1.5 rounded-md flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-primary" />
+            <div className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-xs font-bold px-3 py-1.5 rounded-full shadow-sm text-emerald-700">
+              <Clock className="w-3.5 h-3.5" />
               {product.deliveryTime}
             </div>
           </div>
+        </div>
 
-          <div className="flex items-end gap-4 mb-8">
-            <div className="text-4xl font-black text-gray-900 tracking-tight">₹{product.price}</div>
-            {product.originalPrice && (
-              <div className="text-lg text-gray-400 line-through mb-1 font-medium">₹{product.originalPrice}</div>
-            )}
-            <div className="text-xs text-gray-500 mb-2 ml-1">(Inclusive of all taxes)</div>
+        {/* Details */}
+        <div className="w-full md:w-1/2 flex flex-col">
+          <div className="mb-2">
+            <Link
+              href={`/category/${product.categorySlug}`}
+              className="text-xs font-bold text-primary uppercase tracking-wider hover:underline"
+            >
+              {product.categoryName}
+            </Link>
           </div>
 
-          {/* Add to Cart Actions */}
-          <div className="mb-10">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight mb-2 text-balance">
+            {product.name}
+          </h1>
+          <p className="text-sm text-muted-foreground font-medium mb-6">{product.unit}</p>
+
+          <div className="flex items-end gap-3 mb-8">
+            <span className="text-4xl font-black tracking-tight">₹{product.price}</span>
+            {product.originalPrice && (
+              <>
+                <span className="text-lg text-muted-foreground line-through font-medium mb-1">₹{product.originalPrice}</span>
+                <span className="text-sm font-bold text-rose-500 mb-1">{discount}% off</span>
+              </>
+            )}
+          </div>
+
+          {/* CTA */}
+          <div className="mb-8">
             {!product.inStock ? (
-              <Button disabled className="w-full rounded-xl h-14 text-lg font-bold" variant="secondary">
+              <div className="h-14 flex items-center justify-center bg-secondary rounded-2xl text-muted-foreground font-bold text-base">
                 Out of Stock
-              </Button>
+              </div>
             ) : quantity > 0 ? (
-              <div className="flex items-center justify-between bg-primary rounded-xl h-14 overflow-hidden shadow-md px-2">
-                <button 
+              <div className="flex items-center justify-between bg-primary rounded-2xl h-14 px-3 shadow-md shadow-primary/20">
+                <button
                   onClick={handleDecrement}
                   disabled={isPending}
-                  className="w-14 h-12 rounded-lg flex items-center justify-center text-primary-foreground hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-50"
+                  className="w-12 h-10 rounded-xl flex items-center justify-center text-primary-foreground hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-50"
+                  data-testid="button-decrement"
                 >
-                  <Minus className="h-6 w-6" />
+                  <Minus className="w-5 h-5" />
                 </button>
-                <div className="flex-1 flex items-center justify-center text-primary-foreground font-bold text-xl">
-                  {isPending ? <Loader2 className="h-6 w-6 animate-spin" /> : `${quantity} in Cart`}
+                <div className="flex-1 flex items-center justify-center text-primary-foreground font-black text-lg">
+                  {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : `${quantity} in cart`}
                 </div>
-                <button 
+                <button
                   onClick={handleIncrement}
                   disabled={isPending}
-                  className="w-14 h-12 rounded-lg flex items-center justify-center text-primary-foreground hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-50"
+                  className="w-12 h-10 rounded-xl flex items-center justify-center text-primary-foreground hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-50"
+                  data-testid="button-increment"
                 >
-                  <Plus className="h-6 w-6" />
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             ) : (
-              <Button 
+              <button
                 onClick={handleAdd}
                 disabled={isPending}
-                className="w-full rounded-xl h-14 text-lg font-bold shadow-md hover:shadow-lg transition-all"
+                className="w-full h-14 bg-primary text-primary-foreground font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all shadow-md shadow-primary/20 disabled:opacity-60"
+                data-testid="button-add"
               >
-                {isPending ? <Loader2 className="h-6 w-6 animate-spin mr-2" /> : null}
+                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
                 Add to Cart
-              </Button>
+              </button>
             )}
           </div>
 
-          <Separator className="mb-6" />
+          {/* Trust badges */}
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            {[
+              { icon: Zap, label: "10-min delivery" },
+              { icon: ShieldCheck, label: "Quality assured" },
+              { icon: RotateCcw, label: "Easy returns" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="bg-secondary rounded-xl p-3 flex flex-col items-center gap-1.5 text-center">
+                <Icon className="w-4 h-4 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground leading-tight">{label}</span>
+              </div>
+            ))}
+          </div>
 
           {/* Description */}
-          <div>
-            <h3 className="font-bold text-gray-900 mb-3 text-lg">Product Details</h3>
-            <div className="text-gray-600 leading-relaxed text-sm space-y-4">
-              {product.description ? (
-                <p>{product.description}</p>
-              ) : (
-                <p>High quality {product.name.toLowerCase()} sourced locally. Freshness guaranteed. Delivered to your doorstep in minutes.</p>
-              )}
-            </div>
+          <div className="border-t border-border/60 pt-6">
+            <h3 className="font-extrabold text-sm mb-3">Product Details</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {product.description ??
+                `High quality ${product.name.toLowerCase()} sourced locally. Freshness guaranteed. Delivered to your doorstep in minutes.`}
+            </p>
           </div>
-          
-          {/* Important Info */}
-          <div className="mt-8 bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex gap-3">
-            <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <p className="font-medium mb-1">Important Information</p>
-              <p className="text-blue-700/80">Actual product packaging and materials may contain more and different information than what is shown on our app or website. We recommend that you do not rely solely on the information presented here and that you always read labels, warnings, and directions before using or consuming a product.</p>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>

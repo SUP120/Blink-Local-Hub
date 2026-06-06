@@ -2,34 +2,56 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Plus, Minus, Clock, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Product, useGetCart, useAddToCart, useUpdateCartItem, useRemoveFromCart, getGetCartQueryKey } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import {
+  Product,
+  useGetCart,
+  useAddToCart,
+  useUpdateCartItem,
+  useRemoveFromCart,
+  getGetCartQueryKey,
+} from "@workspace/api-client-react";
+
+const IMG_BG: Record<string, string> = {
+  groceries: "bg-amber-50",
+  "dairy-eggs": "bg-blue-50",
+  "fruits-vegetables": "bg-emerald-50",
+  snacks: "bg-orange-50",
+  "cold-drinks": "bg-cyan-50",
+  "frozen-food": "bg-indigo-50",
+  "instant-ready": "bg-red-50",
+  "personal-care": "bg-pink-50",
+  household: "bg-slate-50",
+  "baby-care": "bg-purple-50",
+  "pet-supplies": "bg-lime-50",
+  medicines: "bg-rose-50",
+  electronics: "bg-sky-50",
+  stationery: "bg-yellow-50",
+};
 
 export function ProductCard({ product }: { product: Product }) {
   const { data: cart } = useGetCart();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-  
+
   const addToCart = useAddToCart();
   const updateCart = useUpdateCartItem();
   const removeCart = useRemoveFromCart();
 
+  const [justAdded, setJustAdded] = useState(false);
+
   const cartItem = cart?.items.find((item) => item.productId === product.id);
   const quantity = cartItem?.quantity || 0;
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
 
   const handleAdd = () => {
     addToCart.mutate(
       { data: { productId: product.id, quantity: 1 } },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
-          toast({
-            title: "Added to cart",
-            description: `${product.name} added to your cart.`,
-          });
+          invalidate();
+          setJustAdded(true);
+          setTimeout(() => setJustAdded(false), 800);
         },
       }
     );
@@ -38,119 +60,133 @@ export function ProductCard({ product }: { product: Product }) {
   const handleIncrement = () => {
     updateCart.mutate(
       { productId: product.id, data: { quantity: quantity + 1 } },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
-        },
-      }
+      { onSuccess: invalidate }
     );
   };
 
   const handleDecrement = () => {
     if (quantity <= 1) {
-      removeCart.mutate(
-        { productId: product.id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
-          },
-        }
-      );
+      removeCart.mutate({ productId: product.id }, { onSuccess: invalidate });
     } else {
       updateCart.mutate(
         { productId: product.id, data: { quantity: quantity - 1 } },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
-          },
-        }
+        { onSuccess: invalidate }
       );
     }
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) 
+  const discount = product.originalPrice
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
     : 0;
 
-  const isPending = addToCart.isPending || updateCart.isPending || removeCart.isPending;
+  const isPending =
+    addToCart.isPending || updateCart.isPending || removeCart.isPending;
+
+  const imgBg = IMG_BG[product.categorySlug] ?? "bg-gray-50";
 
   return (
-    <Card className="overflow-hidden flex flex-col hover-elevate transition-all border-border shadow-sm hover:shadow-md">
-      <Link href={`/product/${product.id}`} className="relative aspect-square overflow-hidden bg-gray-100 block">
+    <div
+      className="bg-white rounded-2xl overflow-hidden flex flex-col card-shadow hover:card-shadow-hover transition-all duration-200 hover:-translate-y-0.5 group"
+      data-testid={`card-product-${product.id}`}
+    >
+      <Link
+        href={`/product/${product.id}`}
+        className={`relative aspect-[4/3] overflow-hidden ${imgBg} block`}
+      >
         {discount > 0 && (
-          <Badge className="absolute top-2 left-2 z-10 bg-blue-600 hover:bg-blue-700 font-bold border-none shadow-sm">
+          <div className="absolute top-2.5 left-2.5 z-10 bg-rose-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
             {discount}% OFF
-          </Badge>
+          </div>
         )}
         <img
-          src={product.imageUrl || `https://picsum.photos/seed/product-${product.id}/300/300`}
+          src={
+            product.imageUrl ||
+            `https://picsum.photos/seed/product-${product.id}/300/225`
+          }
           alt={product.name}
-          className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-300"
           loading="lazy"
         />
-        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm text-xs font-semibold px-1.5 py-0.5 rounded text-gray-700 shadow-sm border border-gray-100">
-          <Clock className="w-3 h-3 text-green-600" />
+        <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/95 text-[10px] font-bold px-2 py-1 rounded-full shadow-sm text-emerald-700">
+          <Clock className="w-3 h-3" />
           {product.deliveryTime}
         </div>
       </Link>
-      
-      <CardContent className="p-3 flex-1 flex flex-col">
-        <div className="flex-1">
-          <Link href={`/product/${product.id}`} className="block">
-            <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1 text-gray-800 hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-          </Link>
-          <div className="text-xs text-muted-foreground mb-2">{product.unit}</div>
-        </div>
-        
-        <div className="flex items-end justify-between mt-auto pt-2">
+
+      <div className="p-3 flex flex-col flex-1">
+        <Link href={`/product/${product.id}`} className="block mb-1">
+          <h3 className="font-semibold text-[13px] leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+        </Link>
+        <p className="text-[11px] text-muted-foreground mb-3">{product.unit}</p>
+
+        <div className="flex items-center justify-between mt-auto">
           <div className="flex flex-col">
             {product.originalPrice && (
-              <span className="text-xs text-muted-foreground line-through">
+              <span className="text-[11px] text-muted-foreground line-through leading-none mb-0.5">
                 ₹{product.originalPrice}
               </span>
             )}
-            <span className="font-bold text-gray-900 leading-none">₹{product.price}</span>
+            <span className="text-[15px] font-black text-foreground leading-none">
+              ₹{product.price}
+            </span>
           </div>
-          
-          <div className="shrink-0 h-8">
+
+          <div className="shrink-0">
             {quantity > 0 ? (
-              <div className="flex items-center bg-primary text-primary-foreground rounded-md h-full overflow-hidden shadow-sm">
-                <button 
+              <div className="flex items-center gap-0 bg-primary rounded-full overflow-hidden shadow-sm h-8">
+                <button
                   onClick={handleDecrement}
                   disabled={isPending}
-                  className="w-8 h-full flex items-center justify-center hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50"
+                  className="w-8 h-8 flex items-center justify-center text-primary-foreground hover:bg-black/10 active:bg-black/20 transition-colors disabled:opacity-50"
                   aria-label="Decrease quantity"
+                  data-testid={`button-decrement-${product.id}`}
                 >
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-3.5 w-3.5" />
                 </button>
-                <div className="w-6 h-full flex items-center justify-center font-bold text-sm bg-primary border-x border-primary/20">
-                  {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : quantity}
+                <div className="w-6 text-center text-primary-foreground font-black text-sm leading-none">
+                  {isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                  ) : (
+                    quantity
+                  )}
                 </div>
-                <button 
+                <button
                   onClick={handleIncrement}
                   disabled={isPending}
-                  className="w-8 h-full flex items-center justify-center hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-50"
+                  className="w-8 h-8 flex items-center justify-center text-primary-foreground hover:bg-black/10 active:bg-black/20 transition-colors disabled:opacity-50"
                   aria-label="Increase quantity"
+                  data-testid={`button-increment-${product.id}`}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              <Button 
-                onClick={handleAdd} 
-                variant="outline" 
-                size="sm" 
+              <button
+                onClick={handleAdd}
                 disabled={isPending || !product.inStock}
-                className="h-full px-4 text-primary border-primary/30 hover:bg-primary/5 hover:text-primary hover:border-primary font-semibold shadow-sm"
+                className={`h-8 px-4 rounded-full text-[13px] font-bold border-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  justAdded
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-white text-primary border-primary hover:bg-primary hover:text-primary-foreground"
+                }`}
+                data-testid={`button-add-${product.id}`}
               >
-                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "ADD"}
-              </Button>
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : justAdded ? (
+                  "✓"
+                ) : (
+                  "ADD"
+                )}
+              </button>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
