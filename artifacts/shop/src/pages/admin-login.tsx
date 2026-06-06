@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { adminLogin, isAdminLoggedIn } from "@/lib/admin-auth";
-import { Zap, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { adminLogin, isAdminLoggedIn, ADMIN_EMAIL, ADMIN_PASSWORD } from "@/lib/admin-auth";
+import { Zap, Eye, EyeOff, ShieldCheck, Copy, Check } from "lucide-react";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -10,6 +10,7 @@ export default function AdminLogin() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<"email" | "pass" | null>(null);
 
   useEffect(() => {
     if (isAdminLoggedIn()) setLocation("/admin/dashboard");
@@ -30,9 +31,23 @@ export default function AdminLogin() {
     }, 600);
   };
 
+  const fillCred = () => {
+    setEmail(ADMIN_EMAIL);
+    setPassword(ADMIN_PASSWORD);
+    setError("");
+  };
+
+  const copyText = (text: string, type: "email" | "pass") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(type);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0a1628] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex w-14 h-14 rounded-2xl bg-primary items-center justify-center mb-4 shadow-lg shadow-primary/30">
             <Zap className="w-7 h-7 text-white fill-white" />
@@ -41,6 +56,50 @@ export default function AdminLogin() {
           <p className="text-white/50 text-sm mt-1">Sign in to manage your store</p>
         </div>
 
+        {/* ── DEMO CREDENTIALS CARD ── */}
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-black text-primary uppercase tracking-widest">🔑 Demo Credentials</p>
+            <button
+              onClick={fillCred}
+              className="text-[11px] font-bold bg-primary text-white px-3 py-1 rounded-full hover:bg-primary/90 transition-all active:scale-95"
+            >
+              Auto-fill ↓
+            </button>
+          </div>
+          <div className="space-y-2">
+            {/* Email row */}
+            <div className="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2">
+              <div>
+                <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">Email</p>
+                <p className="text-sm text-white font-bold font-mono">{ADMIN_EMAIL}</p>
+              </div>
+              <button
+                onClick={() => copyText(ADMIN_EMAIL, "email")}
+                className="text-white/50 hover:text-white transition-colors ml-2 shrink-0"
+                title="Copy email"
+              >
+                {copied === "email" ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {/* Password row */}
+            <div className="flex items-center justify-between bg-white/10 rounded-xl px-3 py-2">
+              <div>
+                <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">Password</p>
+                <p className="text-sm text-white font-bold font-mono">{ADMIN_PASSWORD}</p>
+              </div>
+              <button
+                onClick={() => copyText(ADMIN_PASSWORD, "pass")}
+                className="text-white/50 hover:text-white transition-colors ml-2 shrink-0"
+                title="Copy password"
+              >
+                {copied === "pass" ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── LOGIN FORM ── */}
         <div className="bg-white rounded-2xl p-6 shadow-xl shadow-black/30">
           <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-xl p-3 mb-5">
             <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
@@ -107,7 +166,7 @@ export default function AdminLogin() {
         </div>
 
         <p className="text-center text-white/30 text-xs mt-6">
-          QuickMart © 2026 · Admin Portal
+          QuickMart © 2026 · Admin Portal · #headstart2026
         </p>
       </div>
     </div>
