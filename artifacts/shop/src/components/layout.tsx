@@ -19,7 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 bg-white border-b border-border/60">
+      <header className="sticky top-0 z-50 glass border-b border-border/50 shadow-sm">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0 group" data-testid="link-logo">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
@@ -70,7 +70,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-4 py-2 font-bold text-sm shadow-sm hover:bg-primary/90 active:scale-95 transition-all"
+              className="relative flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-4 py-2 font-bold text-sm shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-primary/30 hover:shadow-md active:scale-95 transition-all"
               data-testid="link-cart"
             >
               <ShoppingCart className="h-4 w-4" />
@@ -101,7 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <footer className="bg-white border-t border-border/60 mt-auto">
+      <footer className="bg-white border-t border-border/50 mt-auto">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-10">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
@@ -129,7 +129,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border/60 z-50 safe-area-pb">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border/50 z-50 safe-area-pb">
         <div className="grid grid-cols-5 h-14">
           {[
             { href: "/", icon: Home, label: "Home" },
@@ -143,7 +143,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex flex-col items-center justify-center gap-0.5 relative transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+                className={`flex flex-col items-center justify-center gap-0.5 relative transition-colors ${
+                  active ? "text-primary" : "text-muted-foreground"
+                }`}
                 data-testid={`nav-${label.toLowerCase()}`}
               >
                 <div className="relative">
@@ -155,7 +157,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
                 <span className="text-[10px] font-semibold">{label}</span>
-                {active && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-b-full" />}
+                {active && (
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 w-5 h-1 bg-primary rounded-full" />
+                )}
               </Link>
             );
           })}

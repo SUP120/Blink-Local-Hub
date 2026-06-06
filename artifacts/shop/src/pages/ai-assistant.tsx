@@ -83,11 +83,15 @@ export default function AIAssistant() {
       else if (activeTab === "health") body = { goal: selectedGoal };
 
       const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!r.ok) throw new Error("AI request failed");
+      if (!r.ok) {
+        const errData = await r.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errData?.error ?? `Server error ${r.status}`);
+      }
       const data = await r.json();
       setResult(data);
     } catch (err) {
-      toast({ title: "AI Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast({ title: "AI Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -124,25 +128,30 @@ export default function AIAssistant() {
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 animate-fade-in-up">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary font-bold text-xs px-4 py-1.5 rounded-full mb-4">
-          <Sparkles className="w-3.5 h-3.5" />
-          Powered by Grok AI
+          <Sparkles className="w-3.5 h-3.5 animate-float" />
+          Powered by GitHub Models AI
         </div>
         <h1 className="text-3xl font-extrabold tracking-tight mb-2">AI Smart Shopping</h1>
         <p className="text-muted-foreground max-w-md mx-auto">Tell AI what you need and it builds the perfect cart for you in seconds.</p>
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-2 flex-wrap justify-center mb-8">
-        {TABS.map((tab) => {
+      <div className="flex gap-2 flex-wrap justify-center mb-8 animate-fade-in-up delay-100">
+        {TABS.map((tab, i) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setResult(null); }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border transition-all ${active ? tab.activeBg + " border-transparent shadow-md" : "bg-white border-border/60 text-muted-foreground hover:border-border hover:text-foreground"}`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border transition-all animate-scale-in hover:scale-105 active:scale-95 ${
+                active
+                  ? tab.activeBg + " border-transparent shadow-md"
+                  : "bg-white border-border/60 text-muted-foreground hover:border-border hover:text-foreground card-shadow"
+              }`}
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <Icon className="w-4 h-4" />
               {tab.label}
@@ -152,7 +161,7 @@ export default function AIAssistant() {
       </div>
 
       {/* Input Card */}
-      <div className={`bg-white rounded-2xl border-2 ${currentTab.bg} p-6 mb-6 card-shadow`}>
+      <div className={`bg-white rounded-2xl border-2 ${currentTab.bg} p-6 mb-6 card-shadow animate-scale-in delay-150`}>
         <div className="flex items-center gap-2 mb-4">
           <currentTab.icon className={`w-5 h-5 ${currentTab.color}`} />
           <h2 className="font-extrabold text-base">{currentTab.label}</h2>
@@ -254,7 +263,7 @@ export default function AIAssistant() {
 
       {/* Results */}
       {result && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in-up">
           {/* AI Message */}
           <div className="bg-white rounded-2xl border border-border/40 p-5 card-shadow">
             <div className="flex items-start gap-3">
@@ -262,7 +271,7 @@ export default function AIAssistant() {
                 <currentTab.icon className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-sm mb-1">Grok says:</p>
+                <p className="font-bold text-sm mb-1">AI says:</p>
                 <p className="text-sm text-muted-foreground">{result.message}</p>
                 {result.tip && <p className="text-xs text-primary font-semibold mt-2 bg-primary/8 rounded-lg px-3 py-2">💡 {result.tip}</p>}
                 {result.cookingTip && <p className="text-xs text-amber-700 font-semibold mt-2 bg-amber-50 rounded-lg px-3 py-2">👨‍🍳 {result.cookingTip}</p>}
