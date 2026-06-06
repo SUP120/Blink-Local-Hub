@@ -111,8 +111,9 @@ router.post("/ai/emergency", async (req, res) => {
 
     return res.json({ products: selected, message: parsed.message, tip: parsed.tip });
   } catch (err) {
-    req.log.error(err);
-    return res.status(500).json({ error: "AI request failed" });
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err }, "AI emergency error");
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -148,8 +149,9 @@ router.post("/ai/recipe", async (req, res) => {
       estimatedCost,
     });
   } catch (err) {
-    req.log.error(err);
-    return res.status(500).json({ error: "AI request failed" });
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err }, "AI recipe error");
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -190,8 +192,9 @@ router.post("/ai/budget", async (req, res) => {
       savings: parsed.savings,
     });
   } catch (err) {
-    req.log.error(err);
-    return res.status(500).json({ error: "AI request failed" });
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err }, "AI budget error");
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -215,8 +218,9 @@ router.post("/ai/student", async (req, res) => {
 
     return res.json({ products: selected, message: parsed.message, totalEstimate: parsed.totalEstimate });
   } catch (err) {
-    req.log.error(err);
-    return res.status(500).json({ error: "AI request failed" });
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err }, "AI student error");
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -250,9 +254,52 @@ router.post("/ai/health", async (req, res) => {
       weeklyPlan: parsed.weeklyPlan,
     });
   } catch (err) {
-    req.log.error(err);
-    return res.status(500).json({ error: "AI request failed" });
+    const msg = err instanceof Error ? err.message : String(err);
+    req.log.error({ err }, "AI health error");
+    return res.status(500).json({ error: msg });
   }
+});
+
+// GET /ai/test — diagnostic: checks token + DB
+router.get("/ai/test", async (req, res) => {
+  const results: Record<string, string> = {};
+
+  // Check token
+  const key = process.env.GITHUB_TOKEN;
+  if (!key) {
+    results.token = "❌ GITHUB_TOKEN not set";
+  } else {
+    try {
+      const r = await fetch(`${GITHUB_AI_BASE}/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model: GITHUB_AI_MODEL,
+          messages: [{ role: "user", content: "Reply with valid json: {\"ok\": true}" }],
+          response_format: { type: "json_object" },
+          max_tokens: 20,
+        }),
+      });
+      if (r.ok) {
+        results.token = "✅ GitHub Models API working";
+      } else {
+        const err = await r.text();
+        results.token = `❌ API error ${r.status}: ${err}`;
+      }
+    } catch (e) {
+      results.token = `❌ Network error: ${e instanceof Error ? e.message : e}`;
+    }
+  }
+
+  // Check DB
+  try {
+    const count = await getAllProducts();
+    results.db = `✅ DB connected — ${count.length} products loaded`;
+  } catch (e) {
+    results.db = `❌ DB error: ${e instanceof Error ? e.message : e}`;
+  }
+
+  return res.json(results);
 });
 
 export default router;
